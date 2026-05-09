@@ -1,0 +1,461 @@
+
+<h2 class="sr-only">Colorful interactive explainer: Detecting network traffic anomalies using a Z-test hypothesis test, with live simulation controls and animated charts.</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.pg{font-family:var(--font-sans);padding:0 0 2rem}
+
+.hero{text-align:center;padding:2.5rem 1rem 2rem;background:#EAF3DE;border-radius:var(--border-radius-lg);margin-bottom:1.5rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;left:-40px;width:180px;height:180px;background:#C0DD97;border-radius:50%;opacity:.4}
+.hero::after{content:'';position:absolute;bottom:-50px;right:-30px;width:220px;height:220px;background:#B5D4F4;border-radius:50%;opacity:.35}
+.hero-inner{position:relative;z-index:1}
+.hero-pill{display:inline-block;background:#639922;color:#EAF3DE;font-size:11px;padding:3px 12px;border-radius:20px;margin-bottom:.75rem;font-weight:500}
+.hero h1{font-size:22px;font-weight:500;color:#27500A;margin-bottom:.5rem}
+.hero p{font-size:13px;color:#3B6D11;max-width:500px;margin:0 auto;line-height:1.6}
+
+.sec{margin-bottom:1.75rem}
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:.85rem}
+.sec-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sec-title{font-size:16px;font-weight:500;color:var(--color-text-primary)}
+.sec-sub{font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:1rem}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+.step{border-radius:var(--border-radius-lg);padding:.85rem;border:0.5px solid}
+.step .sn{font-size:11px;font-weight:500;margin-bottom:5px}
+.step .st{font-size:13px;font-weight:500;margin-bottom:4px}
+.step .sb{font-size:12px;line-height:1.5}
+.step.s1{background:#EEEDFE;border-color:#AFA9EC}.step.s1 .sn{color:#534AB7}.step.s1 .st{color:#3C3489}.step.s1 .sb{color:#534AB7}
+.step.s2{background:#E1F5EE;border-color:#5DCAA5}.step.s2 .sn{color:#0F6E56}.step.s2 .st{color:#085041}.step.s2 .sb{color:#0F6E56}
+.step.s3{background:#FAEEDA;border-color:#EF9F27}.step.s3 .sn{color:#854F0B}.step.s3 .st{color:#633806}.step.s3 .sb{color:#854F0B}
+.step.s4{background:#FBEAF0;border-color:#ED93B1}.step.s4 .sn{color:#993556}.step.s4 .st{color:#72243E}.step.s4 .sb{color:#993556}
+
+.hypo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:.85rem 0}
+.hcard{border-radius:var(--border-radius-lg);padding:.85rem;border:0.5px solid}
+.hcard.h0{background:#E1F5EE;border-color:#5DCAA5}
+.hcard.h0 .hl{font-size:11px;font-weight:500;color:#0F6E56;margin-bottom:4px}
+.hcard.h0 .ht{font-size:13px;color:#085041;line-height:1.5}
+.hcard.h1{background:#FCEBEB;border-color:#F09595}
+.hcard.h1 .hl{font-size:11px;font-weight:500;color:#A32D2D;margin-bottom:4px}
+.hcard.h1 .ht{font-size:13px;color:#791F1F;line-height:1.5}
+
+.fbox{background:#EEEDFE;border-left:3px solid #7F77DD;border-radius:0 var(--border-radius-md) var(--border-radius-md) 0;padding:.85rem 1rem;font-family:var(--font-mono);font-size:12px;color:#3C3489;margin:.75rem 0;line-height:1.9}
+.fbox .cm{font-family:var(--font-sans);color:#7F77DD;font-size:11px}
+
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:1.25rem}
+.sc{border-radius:var(--border-radius-md);padding:.75rem;text-align:center;border:0.5px solid}
+.sc .sl{font-size:11px;font-weight:500;margin-bottom:4px}
+.sc .sv{font-size:20px;font-weight:500}
+.sc .ss{font-size:10px;margin-top:2px}
+.sc.cp{background:#EEEDFE;border-color:#AFA9EC}.sc.cp .sl{color:#534AB7}.sc.cp .sv{color:#3C3489}.sc.cp .ss{color:#534AB7}
+.sc.ct{background:#E1F5EE;border-color:#5DCAA5}.sc.ct .sl{color:#0F6E56}.sc.ct .sv{color:#085041}.sc.ct .ss{color:#0F6E56}
+.sc.ca{background:#FAEEDA;border-color:#EF9F27}.sc.ca .sl{color:#854F0B}.sc.ca .sv{color:#633806}.sc.ca .ss{color:#854F0B}
+.sc.cd{background:#FCEBEB;border-color:#F09595}.sc.cd .sl{color:#A32D2D}.sc.cd .sv{color:#791F1F}.sc.cd .ss{color:#A32D2D}
+.sc.cg{background:#EAF3DE;border-color:#97C459}.sc.cg .sl{color:#3B6D11}.sc.cg .sv{color:#27500A}.sc.cg .ss{color:#3B6D11}
+
+.ctrlbar{background:#F1EFE8;border-radius:var(--border-radius-lg);padding:.85rem 1rem;display:flex;gap:.85rem;flex-wrap:wrap;align-items:center;margin:1rem 0;border:0.5px solid #D3D1C7}
+.ctrlbar label{font-size:12px;color:#5F5E5A;font-weight:500}
+.ctrlbar input[type=range]{flex:1;min-width:70px;max-width:140px}
+.ctrlbar span{font-size:13px;font-weight:500;color:var(--color-text-primary);min-width:26px}
+.abtn{font-size:12px;padding:5px 14px;border-radius:var(--border-radius-md);border:0.5px solid #F09595;background:#FCEBEB;color:#791F1F;cursor:pointer;font-weight:500}
+.abtn:hover{background:#F7C1C1}
+.rbtn{font-size:12px;padding:5px 14px;border-radius:var(--border-radius-md);border:0.5px solid #D3D1C7;background:#F1EFE8;color:#5F5E5A;cursor:pointer}
+.rbtn:hover{background:#D3D1C7}
+
+.lgnd{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:12px;color:var(--color-text-secondary)}
+.lgnd span{display:flex;align-items:center;gap:5px}
+.ldot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.lline{width:16px;height:3px;flex-shrink:0}
+
+.alertbox{display:none;border-radius:var(--border-radius-md);padding:.7rem 1rem;font-size:13px;margin:.6rem 0;border:0.5px solid}
+.alertbox.show{display:flex;align-items:flex-start;gap:8px}
+.alertbox.al{background:#FCEBEB;border-color:#F09595;color:#791F1F}
+.alertbox.ok{background:#E1F5EE;border-color:#5DCAA5;color:#085041}
+
+.zmeter{margin:.75rem 0}
+.ztrack{height:18px;background:#F1EFE8;border-radius:9px;overflow:visible;position:relative;border:0.5px solid #D3D1C7}
+.zfill{height:100%;border-radius:9px;transition:width .4s,background .4s}
+.zcritline{position:absolute;top:-5px;bottom:-5px;width:2px;background:#A32D2D;left:11.65%;border-radius:1px}
+.zcritlbl{position:absolute;left:11.65%;top:-18px;font-size:10px;color:#A32D2D;transform:translateX(-50%)}
+
+.barchartw{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;align-items:center;gap:8px}
+.blbl{font-size:12px;color:var(--color-text-secondary);width:120px;flex-shrink:0;text-align:right}
+.btrk{flex:1;height:28px;background:#F1EFE8;border-radius:var(--border-radius-md);overflow:hidden;position:relative;border:0.5px solid #D3D1C7}
+.bfill{height:100%;border-radius:var(--border-radius-md);display:flex;align-items:center;padding-left:8px;font-size:12px;font-weight:500;transition:width .5s}
+.bval{font-size:12px;color:var(--color-text-secondary);width:52px}
+.tcritline{position:absolute;top:0;bottom:0;width:2px;background:#A32D2D;opacity:.8}
+
+.tabbtn-row{display:flex;gap:0;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:1rem}
+.tbtn{font-size:12px;padding:.45rem .9rem;border:none;background:transparent;color:var(--color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px}
+.tbtn.on{color:var(--color-text-primary);border-bottom-color:#7F77DD;font-weight:500}
+.tpane{display:none}.tpane.on{display:block}
+
+.insight-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:1rem}
+.ins{border-radius:var(--border-radius-lg);padding:.85rem;border:0.5px solid}
+.ins .il{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.ins .iv{font-size:17px;font-weight:500;margin-bottom:3px}
+.ins .in{font-size:11px;line-height:1.5}
+.ins.i1{background:#EEEDFE;border-color:#AFA9EC}.ins.i1 .il,.ins.i1 .in{color:#534AB7}.ins.i1 .iv{color:#3C3489}
+.ins.i2{background:#FAEEDA;border-color:#EF9F27}.ins.i2 .il,.ins.i2 .in{color:#854F0B}.ins.i2 .iv{color:#633806}
+.ins.i3{background:#E1F5EE;border-color:#5DCAA5}.ins.i3 .il,.ins.i3 .in{color:#0F6E56}.ins.i3 .iv{color:#085041}
+.ins.i4{background:#FCEBEB;border-color:#F09595}.ins.i4 .il,.ins.i4 .in{color:#A32D2D}.ins.i4 .iv{color:#791F1F}
+
+.divdr{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:1.75rem 0}
+
+.livecards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:.75rem 0}
+.lc{border-radius:var(--border-radius-md);padding:.7rem .85rem;border:0.5px solid}
+.lc .ll{font-size:11px;font-weight:500;margin-bottom:3px}
+.lc .lv{font-size:19px;font-weight:500}
+.lc .ls{font-size:10px;margin-top:2px}
+.lc.lcp{background:#EEEDFE;border-color:#AFA9EC}.lc.lcp .ll,.lc.lcp .ls{color:#534AB7}.lc.lcp .lv{color:#3C3489}
+.lc.lca{background:#FAEEDA;border-color:#EF9F27}.lc.lca .ll,.lc.lca .ls{color:#854F0B}.lc.lca .lv{color:#633806}
+.lc.lcd-n{background:#E1F5EE;border-color:#5DCAA5}.lc.lcd-n .ll,.lc.lcd-n .ls{color:#0F6E56}.lc.lcd-n .lv{color:#085041}
+.lc.lcd-a{background:#FCEBEB;border-color:#F09595}.lc.lcd-a .ll,.lc.lcd-a .ls{color:#A32D2D}.lc.lcd-a .lv{color:#791F1F}
+</style>
+
+<div class="pg">
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-pill">Experiential learning — statistics applied to cybersecurity</div>
+    <h1>Detecting network anomalies using statistical hypothesis testing</h1>
+    <p>A one-tailed Z-test automatically spots a DDoS attack hidden in packet counts — step by step, live and interactive.</p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#EEEDFE;color:#3C3489">1</div>
+    <div class="sec-title">The four-step detection pipeline</div>
+  </div>
+  <div class="steps">
+    <div class="step s1"><div class="sn">Step 1</div><div class="st">Model normal traffic</div><div class="sb">Packets arrive as Poisson(λ₀=100). This is our reference baseline.</div></div>
+    <div class="step s2"><div class="sn">Step 2</div><div class="st">Compute rolling mean</div><div class="sb">Every minute, take the sample mean x̄ over the last n=5 minutes.</div></div>
+    <div class="step s3"><div class="sn">Step 3</div><div class="st">Run a Z-test</div><div class="sb">Compute Z = (x̄ − λ₀)/SE. If Z &gt; 2.33, reject H₀ and alert.</div></div>
+    <div class="step s4"><div class="sn">Step 4</div><div class="st">Take action</div><div class="sb">Alert the security team or auto-trigger rate-limiting on the source.</div></div>
+  </div>
+</div>
+
+<hr class="divdr">
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#E1F5EE;color:#085041">2</div>
+    <div class="sec-title">Statistical model and hypotheses</div>
+  </div>
+  <p class="sec-sub">By the Central Limit Theorem, the sample mean of n=5 Poisson observations is approximately Normal — making a Z-test valid even though the raw data is discrete.</p>
+
+  <div class="hypo">
+    <div class="hcard h0">
+      <div class="hl">H₀ — null hypothesis (safe)</div>
+      <div class="ht">Mean packet rate λ ≤ 100/min<br><span style="font-size:11px;color:#0F6E56">Assumed true until evidence says otherwise</span></div>
+    </div>
+    <div class="hcard h1">
+      <div class="hl">H₁ — alternative (attack!)</div>
+      <div class="ht">Mean packet rate λ &gt; 100/min<br><span style="font-size:11px;color:#A32D2D">A volumetric spike — DDoS in progress</span></div>
+    </div>
+  </div>
+
+  <div class="fbox">
+    Z &nbsp;= &nbsp;(x̄ − λ₀) / SE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">← test statistic</span><br>
+    SE = √λ₀ / √n = √100 / √5 ≈ 4.47 &nbsp;<span class="cm">← Poisson: σ=√λ</span><br>
+    x̄<sub>crit</sub> = 100 + 2.33 × 4.47 ≈ <strong>110.42</strong> &nbsp;<span class="cm">← α=0.01, one-tailed Z=2.33</span>
+  </div>
+
+  <div class="statgrid">
+    <div class="sc cp"><div class="sl">Baseline λ₀</div><div class="sv">100</div><div class="ss">packets/min</div></div>
+    <div class="sc ct"><div class="sl">Window n</div><div class="sv">5</div><div class="ss">minutes</div></div>
+    <div class="sc ca"><div class="sl">Std error SE</div><div class="sv">4.47</div><div class="ss">= √100/√5</div></div>
+    <div class="sc cd"><div class="sl">Significance α</div><div class="sv">1%</div><div class="ss">1 false alarm/100</div></div>
+    <div class="sc cg"><div class="sl">Trip-wire x̄</div><div class="sv">110.42</div><div class="ss">packets/min</div></div>
+  </div>
+</div>
+
+<hr class="divdr">
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#FAEEDA;color:#633806">3</div>
+    <div class="sec-title">Live simulation — inject an attack</div>
+  </div>
+  <p class="sec-sub">Minutes 1–60 are normal (Poisson, λ=100). Press "Inject DDoS" to switch to λ_attack from minute 61. Watch the rolling mean cross the threshold and fire an alert.</p>
+
+  <div class="ctrlbar">
+    <label>Attack intensity λ:</label>
+    <input type="range" id="lSlider" min="110" max="250" value="180" step="1">
+    <span id="lVal">180</span>
+    <label>Window n:</label>
+    <input type="range" id="wSlider" min="2" max="10" value="5" step="1">
+    <span id="wVal">5</span>
+    <button class="abtn" onclick="injectAtk()">Inject DDoS attack</button>
+    <button class="rbtn" onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="lgnd">
+    <span><span class="ldot" style="background:#378ADD"></span>Normal traffic</span>
+    <span><span class="ldot" style="background:#E24B4A"></span>Attack traffic</span>
+    <span><span class="lline" style="background:#639922"></span>Rolling mean</span>
+    <span><span class="lline" style="background:#A32D2D;border-top:2px dashed #A32D2D;background:none"></span>Critical threshold 110.42</span>
+  </div>
+
+  <div style="position:relative;width:100%;height:250px;margin-bottom:.5rem">
+    <canvas id="mainChart" role="img" aria-label="Time series of simulated packet counts per minute for 90 minutes, with a DDoS spike starting at minute 61.">Packet counts hover around 100 for minutes 1–60, then jump to ~180 from minute 61 onward.</canvas>
+  </div>
+
+  <div class="alertbox al" id="alertBox">
+    <span style="font-size:14px;width:16px;height:16px;flex-shrink:0">&#9888;</span>
+    <div id="alertTxt">Anomaly detected.</div>
+  </div>
+  <div class="alertbox ok" id="safeBox">
+    <span style="font-size:14px;width:16px;height:16px;flex-shrink:0">&#10003;</span>
+    <div>Traffic is normal — H₀ not rejected. No alert raised.</div>
+  </div>
+</div>
+
+<hr class="divdr">
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#FBEAF0;color:#72243E">4</div>
+    <div class="sec-title">Live Z-score meter</div>
+  </div>
+  <p class="sec-sub">The bar below tracks the Z-score of the most recent window in real time. The red marker at 2.33 is the rejection boundary for α = 0.01.</p>
+
+  <div class="livecards">
+    <div class="lc lcp"><div class="ll">Rolling mean x̄</div><div class="lv" id="curMean">—</div><div class="ls">packets/min (last n mins)</div></div>
+    <div class="lc lca"><div class="ll">Z-score</div><div class="lv" id="curZ">—</div><div class="ls">= (x̄ − 100) / SE</div></div>
+    <div class="lc lcd-n" id="decCard"><div class="ll">Decision</div><div class="lv" id="curDec">—</div><div class="ls" id="curSub"></div></div>
+  </div>
+
+  <div class="zmeter">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-secondary);margin-bottom:4px">
+      <span>Z-score (0 → 20)</span><span style="color:#A32D2D;font-weight:500">Critical = 2.33</span>
+    </div>
+    <div class="ztrack">
+      <div class="zfill" id="zFill" style="width:0%;background:#7F77DD"></div>
+      <div class="zcritline"></div>
+      <div class="zcritlbl">2.33</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-tertiary);margin-top:3px"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
+  </div>
+</div>
+
+<hr class="divdr">
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#FAEEDA;color:#633806">5</div>
+    <div class="sec-title">Z-score comparison across states</div>
+  </div>
+  <p class="sec-sub">The dashed red line is Z = 2.33 — the critical boundary. Bars that cross it trigger a rejection of H₀.</p>
+
+  <div class="barchartw">
+    <div class="brow">
+      <div class="blbl">Max Z (normal phase)</div>
+      <div class="btrk"><div class="bfill" id="b1" style="width:2.5%;background:#AFA9EC;color:#26215C">0.50</div><div class="tcritline" style="left:11.65%"></div></div>
+      <div class="bval" id="bv1">Z = 0.50</div>
+    </div>
+    <div class="brow">
+      <div class="blbl">Detection (minute 61)</div>
+      <div class="btrk"><div class="bfill" id="b2" style="width:17.65%;background:#EF9F27;color:#412402">3.53</div><div class="tcritline" style="left:11.65%"></div></div>
+      <div class="bval" id="bv2">Z = 3.53</div>
+    </div>
+    <div class="brow">
+      <div class="blbl">Peak Z (attack phase)</div>
+      <div class="btrk"><div class="bfill" id="b3" style="width:90.4%;background:#E24B4A;color:#FCEBEB">18.08</div><div class="tcritline" style="left:11.65%"></div></div>
+      <div class="bval" id="bv3">Z = 18.08</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:#A32D2D">
+    <div style="width:20px;border-top:2px dashed #A32D2D"></div>
+    <span>Critical value Z = 2.33 (α = 0.01, one-tailed)</span>
+  </div>
+</div>
+
+<hr class="divdr">
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#E6F1FB;color:#0C447C">6</div>
+    <div class="sec-title">Hypothesis test trace — step by step</div>
+  </div>
+  <p class="sec-sub">Key moments from Table 2 in the report. The rolling mean and Z-score shift dramatically as the attack begins at minute 61.</p>
+
+  <div class="tabbtn-row">
+    <button class="tbtn on" onclick="showTab('norm',this)">Normal phase</button>
+    <button class="tbtn" onclick="showTab('trans',this)">Transition (attack starts)</button>
+    <button class="tbtn" onclick="showTab('peak',this)">Peak attack</button>
+  </div>
+
+  <div class="tpane on" id="tp-norm"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:0.5px solid var(--color-border-tertiary)"><th style="text-align:left;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">End min</th><th style="padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Window</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">x̄</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Z</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Decision</th></tr></thead><tbody id="nb"></tbody></table></div></div>
+  <div class="tpane" id="tp-trans"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:0.5px solid var(--color-border-tertiary)"><th style="text-align:left;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">End min</th><th style="padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Window</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">x̄</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Z</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Decision</th></tr></thead><tbody id="tb"></tbody></table></div></div>
+  <div class="tpane" id="tp-peak"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="border-bottom:0.5px solid var(--color-border-tertiary)"><th style="text-align:left;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">End min</th><th style="padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Window</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">x̄</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Z</th><th style="text-align:right;padding:6px 8px;font-weight:500;color:var(--color-text-secondary)">Decision</th></tr></thead><tbody id="pb"></tbody></table></div></div>
+</div>
+
+<hr class="divdr">
+
+<div class="sec">
+  <div class="sec-hdr">
+    <div class="sec-icon" style="background:#E1F5EE;color:#085041">7</div>
+    <div class="sec-title">Key takeaways</div>
+  </div>
+  <div class="insight-row">
+    <div class="ins i1"><div class="il">Central Limit Theorem</div><div class="iv">n = 5 is enough</div><div class="in">Poisson data → Normal sampling dist. for large λ. Z-test is valid.</div></div>
+    <div class="ins i2"><div class="il">False positive rate</div><div class="iv">α = 1%</div><div class="in">At most 1 false alarm per 100 tests. Directly controls alert fatigue.</div></div>
+    <div class="ins i3"><div class="il">Detection speed</div><div class="iv">Minute 61</div><div class="in">Alert fires within 1 minute of attack onset — the very first window.</div></div>
+    <div class="ins i4"><div class="il">Z-score at peak</div><div class="iv">Z = 18.08</div><div class="in">18.08 >> 2.33. Near-zero probability this occurred by chance under H₀.</div></div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const L0=100,CRIT=2.33,BASE=60,TOT=90;
+let atkMode=false,lAtk=180,chart;
+
+function seeded(lam,seed){
+  let x=Math.sin(seed*9301+49297)*233280;
+  x=x-Math.floor(x);
+  return Math.max(1,Math.round(lam+(x-.5)*2*Math.sqrt(lam)*2.5));
+}
+let norm=[];
+for(let i=0;i<BASE;i++) norm.push(seeded(L0,i+1));
+
+function getN(){return parseInt(document.getElementById('wSlider').value);}
+
+function rolling(data,n){
+  let r=[];
+  for(let i=n-1;i<data.length;i++){
+    let s=data.slice(i-n+1,i+1);
+    r.push(s.reduce((a,b)=>a+b,0)/n);
+  }
+  return r;
+}
+function zs(mean,n){return(mean-L0)/(Math.sqrt(L0)/Math.sqrt(n));}
+
+function buildChart(){
+  const n=getN();
+  let atkData=[];
+  if(atkMode){for(let i=0;i<30;i++) atkData.push(seeded(lAtk,i+500));}
+  const full=[...norm,...atkData];
+  const labels=full.map((_,i)=>i+1);
+  const colors=full.map((_,i)=>i<60?'#378ADD':'#E24B4A');
+  const means=rolling(full,n);
+  const meanArr=full.map((_,i)=>i>=n-1?means[i-(n-1)]:null);
+  const ctx=document.getElementById('mainChart').getContext('2d');
+  if(chart) chart.destroy();
+  chart=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Packets/min',data:full,backgroundColor:colors,borderWidth:0,barPercentage:.85,categoryPercentage:.9,order:2},
+      {label:'Rolling mean',data:meanArr,type:'line',borderColor:'#639922',borderWidth:2,pointRadius:0,tension:.3,spanGaps:false,order:1},
+      {label:'Critical threshold',data:full.map(()=>110.42),type:'line',borderColor:'#A32D2D',borderWidth:1.5,borderDash:[5,4],pointRadius:0,order:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>`Minute ${c[0].label}`,label:c=>c.dataset.label+': '+(c.raw!==null?parseFloat(c.raw).toFixed(1):'—')}}},
+      scales:{
+        x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{size:10}},grid:{display:false},title:{display:true,text:'Minute (t)',font:{size:11}}},
+        y:{min:70,max:220,ticks:{font:{size:10}},title:{display:true,text:'Packets / min',font:{size:11}}}
+      }
+    }
+  });
+  updateStats(full,n);
+}
+
+function updateStats(full,n){
+  const means=rolling(full,n);
+  const lm=means[means.length-1];
+  const z=zs(lm,n);
+  const rej=z>CRIT;
+  document.getElementById('curMean').textContent=lm.toFixed(1);
+  document.getElementById('curZ').textContent=z.toFixed(2);
+  document.getElementById('curDec').textContent=rej?'Reject H₀':'Fail to reject';
+  document.getElementById('curSub').textContent=rej?'Anomaly detected!':'Traffic appears normal';
+  const dc=document.getElementById('decCard');
+  dc.className='lc '+(rej?'lcd-a':'lcd-n');
+  const pct=Math.min(100,Math.max(0,(z/20)*100));
+  document.getElementById('zFill').style.width=pct+'%';
+  document.getElementById('zFill').style.background=z>CRIT?'#E24B4A':z>1.5?'#EF9F27':'#7F77DD';
+  const ab=document.getElementById('alertBox'),sb=document.getElementById('safeBox');
+  ab.classList.toggle('show',rej&&atkMode);
+  sb.classList.toggle('show',!rej);
+  if(rej&&atkMode){
+    const fa=findFirst(full,n);
+    document.getElementById('alertTxt').textContent=`Anomaly detected at minute ${fa}! Rolling mean = ${lm.toFixed(1)}, Z = ${z.toFixed(2)} >> ${CRIT}. H₀ rejected at α = 1%.`;
+  }
+  updateBars(n);
+}
+
+function findFirst(data,n){
+  for(let i=n-1;i<data.length;i++){
+    let s=data.slice(i-n+1,i+1);
+    let m=s.reduce((a,b)=>a+b,0)/n;
+    if(zs(m,n)>CRIT) return i+1;
+  }
+  return '—';
+}
+
+function updateBars(n){
+  const se=Math.sqrt(L0)/Math.sqrt(n);
+  const zDet=(115.8-L0)/se;
+  const zPeak=(lAtk*.99-L0)/se;
+  document.getElementById('b2').style.width=Math.min(100,(zDet/20)*100).toFixed(1)+'%';
+  document.getElementById('b3').style.width=Math.min(100,(zPeak/20)*100).toFixed(1)+'%';
+  document.getElementById('bv2').textContent='Z = '+zDet.toFixed(2);
+  document.getElementById('bv3').textContent='Z = '+zPeak.toFixed(2);
+  document.getElementById('b2').textContent=zDet.toFixed(2);
+  document.getElementById('b3').textContent=zPeak.toFixed(2);
+}
+
+document.getElementById('lSlider').oninput=function(){
+  document.getElementById('lVal').textContent=this.value;
+  lAtk=parseInt(this.value);
+};
+document.getElementById('wSlider').oninput=function(){
+  document.getElementById('wVal').textContent=this.value;
+  buildChart();
+};
+
+function injectAtk(){
+  lAtk=parseInt(document.getElementById('lSlider').value);
+  atkMode=true;
+  buildChart();
+}
+function resetAll(){
+  atkMode=false;
+  norm=[];
+  for(let i=0;i<BASE;i++) norm.push(seeded(L0,i+1));
+  buildChart();
+  document.getElementById('alertBox').classList.remove('show');
+  document.getElementById('safeBox').classList.remove('show');
+  document.getElementById('b2').style.width='17.65%';
+  document.getElementById('b3').style.width='90.4%';
+}
+
+function trow(em,win,mean,n){
+  const z=zs(mean,n),rej=z>CRIT;
+  const zc=rej?`<td style="text-align:right;padding:5px 8px;color:#791F1F;font-weight:500">${z.toFixed(2)}</td>`:`<td style="text-align:right;padding:5px 8px">${z.toFixed(2)}</td>`;
+  const dc=rej?`<td style="text-align:right;padding:5px 8px"><span style="background:#FCEBEB;color:#791F1F;font-size:11px;padding:2px 7px;border-radius:10px;font-weight:500">Reject H₀</span></td>`:`<td style="text-align:right;padding:5px 8px;color:var(--color-text-tertiary)">Fail to reject</td>`;
+  return `<tr style="border-bottom:0.5px solid var(--color-border-tertiary)"><td style="padding:5px 8px">${em}</td><td style="padding:5px 8px;color:var(--color-text-secondary)">${win}</td><td style="text-align:right;padding:5px 8px">${mean.toFixed(1)}</td>${zc}${dc}</tr>`;
+}
+function fillTables(){
+  const n=5;
+  const nr=[[5,'1–5',101.2],[10,'6–10',98.8],[20,'16–20',100.6],[30,'26–30',99.3],[55,'51–55',102.1],[59,'55–59',101.4],[60,'56–60',99.6]];
+  const tr=[[61,'57–61',115.8],[62,'58–62',139.4],[63,'59–63',157.6],[64,'60–64',171.0],[65,'61–65',178.2]];
+  const pr=[[70,'66–70',180.1],[75,'71–75',179.6],[80,'76–80',181.3],[85,'81–85',180.0],[90,'86–90',180.8]];
+  document.getElementById('nb').innerHTML=nr.map(r=>trow(r[0],r[1],r[2],n)).join('');
+  document.getElementById('tb').innerHTML=tr.map(r=>trow(r[0],r[1],r[2],n)).join('');
+  document.getElementById('pb').innerHTML=pr.map(r=>trow(r[0],r[1],r[2],n)).join('');
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tp-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+buildChart();
+fillTables();
+</script>
