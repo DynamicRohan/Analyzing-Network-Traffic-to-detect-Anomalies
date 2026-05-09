@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NetGuard Analytics — DDoS Anomaly Detection</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#0a0e1a;color:#e2e8f0;font-family:Consolas,'Courier New',monospace;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes scanline{0%{top:-5%}100%{top:105%}}
+#scanline{position:fixed;top:-5%;left:0;width:100%;height:3px;background:linear-gradient(transparent,rgba(0,212,255,.05),transparent);pointer-events:none;z-index:9999;animation:scanline 7s linear infinite}
+#topbar{position:sticky;top:0;z-index:200;background:rgba(10,14,26,.95);backdrop-filter:blur(14px);border-bottom:1px solid #1e2d4a;padding:13px 28px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00d4ff,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:18px}
+.brandname{font-weight:900;font-size:16px;letter-spacing:.8px}
+.brandname span{color:#00d4ff}
+.brandsub{font-size:10px;color:#64748b}
+#sitebadge{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;transition:all .3s}
+.bok{background:rgba(0,232,143,.1);border:1px solid rgba(0,232,143,.4);color:#00e88f}
+.bdown{background:rgba(255,59,107,.12);border:1px solid rgba(255,59,107,.5);color:#ff3b6b;animation:pulse .8s infinite}
+#clk{color:#64748b;font-size:12px}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 20px 60px}
+.card{background:#0f1628;border:1px solid #1e2d4a;border-radius:12px;padding:18px;margin-bottom:18px}
+.cblue{border-color:rgba(0,212,255,.3);box-shadow:0 0 22px rgba(0,212,255,.07)}
+.cred{border-color:rgba(255,59,107,.4);box-shadow:0 0 24px rgba(255,59,107,.1)}
+.cpurp{border-color:rgba(167,139,250,.35)}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.col{display:flex;flex-direction:column;gap:5px}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:4px}
+input,select{background:#060d1a;border:1px solid #1e2d4a;color:#e2e8f0;border-radius:7px;padding:7px 12px;font-family:Consolas,monospace;font-size:13px;outline:none;transition:border .2s}
+input:focus,select:focus{border-color:#00d4ff}
+select option{background:#0a0e1a}
+.btn{border:none;border-radius:8px;padding:9px 20px;font-family:Consolas,monospace;font-weight:700;font-size:13px;cursor:pointer;transition:all .15s;letter-spacing:.4px}
+.bg{background:rgba(0,232,143,.12);color:#00e88f;border:1px solid rgba(0,232,143,.45)}.bg:hover{background:rgba(0,232,143,.25)}
+.br{background:rgba(255,59,107,.12);color:#ff3b6b;border:1px solid rgba(255,59,107,.4)}.br:hover{background:rgba(255,59,107,.25)}
+.bb{background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.35)}.bb:hover{background:rgba(0,212,255,.2)}
+.statrow{display:flex;flex-wrap:wrap;gap:11px;margin-bottom:18px;align-items:center}
+.sc{background:#0f1628;border-radius:10px;padding:11px 15px;min-width:118px;border:1px solid #1e2d4a;transition:all .3s}
+.sl{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#64748b;margin-bottom:3px}
+.sv{font-size:21px;font-weight:900}
+.su{font-size:11px;margin-left:2px;font-weight:400;opacity:.6}
+canvas{display:block}
+.chartbox{width:100%}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+@media(max-width:680px){.twocol{grid-template-columns:1fr}}
+#explainer{display:none}
+#explainer.show{display:block;animation:fadein .3s}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:10px}
+.eitem{background:#06111f;border-radius:8px;padding:13px}
+.eitem h4{font-size:12px;font-weight:700;margin-bottom:6px}
+.eitem p{font-size:11px;color:#64748b;line-height:1.75;white-space:pre-line}
+#alertbox{background:#0d0612;border-radius:8px;padding:10px 13px;max-height:145px;overflow-y:auto;border:1px solid rgba(255,59,107,.2);font-size:12px}
+#httplog{background:#040a14;border-radius:8px;padding:9px 12px;max-height:145px;overflow-y:auto;border:1px solid #1e2d4a;font-size:11px}
+#downbanner{display:none;border:1px solid rgba(255,59,107,.5);border-radius:10px;padding:14px;background:rgba(255,59,107,.06);margin-top:12px}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:#64748b}
+.ld{display:inline-flex;align-items:center;gap:5px}
+.dot{width:14px;height:2px;border-radius:2px;display:inline-block}
+#pbwrap{background:#0d1422;border-radius:4px;height:4px;margin-bottom:18px;overflow:hidden}
+#pb{height:100%;width:0%;background:linear-gradient(90deg,#00d4ff,#a78bfa);transition:width .35s}
+#idlehint{text-align:center;padding:28px 0;color:#64748b}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:8px 12px;text-align:left;color:#64748b;font-size:10px;text-transform:uppercase;border-bottom:1px solid #1e2d4a;font-weight:600}
+td{padding:8px 12px;border-bottom:1px solid #141e30}
+tr:nth-child(even) td{background:rgba(255,255,255,.018)}
+.stitle{font-weight:700;font-size:14px;margin-bottom:6px}
+#footer{text-align:center;color:#64748b;font-size:11px;line-height:2;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="scanline"></div>
+<div id="topbar">
+  <div class="brand">
+    <div class="logo">&#x1F6E1;</div>
+    <div>
+      <div class="brandname">NetGuard <span>Analytics</span></div>
+      <div class="brandsub">Real-time DDoS Anomaly Detection &middot; Statistical Methods</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div id="sitebadge" class="bok">&#x25CF; SITE ONLINE</div>
+    <div id="clk"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="card row">
+  <div class="col"><div class="lbl">Website Name</div><input id="iSite" value="MyShop.com" style="width:170px"/></div>
+  <div class="col"><div class="lbl">Speed</div>
+    <select id="iSpeed">
+      <option value="800">Slow (800ms/min)</option>
+      <option value="400" selected>Normal (400ms/min)</option>
+      <option value="150">Fast (150ms/min)</option>
+      <option value="60">Turbo (60ms/min)</option>
+    </select>
+  </div>
+  <div class="col"><div class="lbl">Baseline λ₀ (pkt/min)</div><input id="iL0" type="number" value="100" min="10" max="500" style="width:100px"/></div>
+  <div class="col"><div class="lbl">Attack λ (pkt/min)</div><input id="iLA" type="number" value="180" min="30" max="1000" style="width:100px"/></div>
+  <div style="margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button class="btn bg" id="btnStart" onclick="startSim()">&#9654; Start Simulation</button>
+    <button class="btn br" id="btnStop" onclick="stopSim()" style="display:none">&#9632; Stop</button>
+    <button class="btn bb" onclick="toggleExp()">&#x1F4D0; Math</button>
+  </div>
+</div>
+
+<div id="pbwrap"><div id="pb"></div></div>
+
+<div class="card cpurp" id="explainer" style="margin-bottom:18px">
+  <div style="font-weight:900;color:#a78bfa;font-size:14px;margin-bottom:4px">&#x1F4D0; How Statistical Detection Works</div>
+  <div class="egrid">
+    <div class="eitem" style="border-left:3px solid #00d4ff"><h4 style="color:#00d4ff">Poisson Traffic Model</h4><p>Packets/min follow X_t ~ Poisson(λ).
+Normal ops: λ₀ = 100 pkt/min.
+DDoS flood: λ_atk ~ 180 (+80%).
+Poisson models independent arrival events in fixed time windows.</p></div>
+    <div class="eitem" style="border-left:3px solid #a78bfa"><h4 style="color:#a78bfa">Central Limit Theorem</h4><p>For rolling window n=5 mins,
+x̄ ~ Normal(λ₀, σ/√n) by CLT.
+σ = √λ₀ = √100 = 10 (Poisson)
+SE = σ/√n = 10/√5 ≈ 4.47 pkt/min</p></div>
+    <div class="eitem" style="border-left:3px solid #ffb300"><h4 style="color:#ffb300">One-Tailed Z-Test</h4><p>H₀: λ ≤ 100 (normal traffic)
+H��: λ > 100 (attack underway)
+Z = (x̄ - λ₀) / SE
+α = 0.01 → Z_critical = 2.33
+Critical mean ≈ 110.42 pkt/min</p></div>
+    <div class="eitem" style="border-left:3px solid #ff3b6b"><h4 style="color:#ff3b6b">Decision &amp; Alarm</h4><p>If rolling mean > 110.42 pkt/min:
+→ Reject H₀ → ANOMALY → Site DOWN
+False alarm rate: only 1% (α=0.01)
+During attack Z ≈ 18 >> 2.33
+Probability of false alarm ≈ 0</p></div>
+  </div>
+</div>
+
+<div class="statrow">
+  <div class="sc" id="scPkt"><div class="sl">Packets / min</div><div class="sv" id="svPkt" style="color:#00d4ff">&#8212;</div></div>
+  <div class="sc" id="scRm"><div class="sl">Rolling Mean 5-min</div><div class="sv" id="svRm" style="color:#00d4ff">&#8212;<span class="su">pkt</span></div></div>
+  <div class="sc" id="scZ"><div class="sl">Z-Score</div><div class="sv" id="svZ" style="color:#00d4ff">&#8212;</div></div>
+  <div class="sc"><div class="sl">Elapsed</div><div class="sv" id="svMin" style="color:#a78bfa">0<span class="su">min</span></div></div>
+  <div class="sc" id="scDet" style="display:none;border-color:rgba(255,179,0,.35)"><div class="sl">Detected At</div><div class="sv" id="svDet" style="color:#ffb300">&#8212;</div></div>
+  <div style="margin-left:auto"><canvas id="cGauge" width="145" height="100"></canvas></div>
+</div>
+
+<div class="card cblue">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+    <div>
+      <div class="stitle">&#x1F4E1; Live Network Traffic &mdash; <span id="siteLabel" style="color:#00d4ff">MyShop.com</span></div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px">Packets/min &middot; DDoS attack injected at minute 61</div>
+    </div>
+    <div class="legend">
+      <span class="ld"><span class="dot" style="background:#00d4ff"></span>Normal</span>
+      <span class="ld"><span class="dot" style="background:#ff3b6b"></span>Attack</span>
+      <span class="ld"><span class="dot" style="background:#00e88f"></span>λ₀=100</span>
+      <span class="ld"><span class="dot" style="background:#ffb300"></span>Threshold</span>
+    </div>
+  </div>
+  <div class="chartbox"><canvas id="cRaw" height="140"></canvas></div>
+  <div id="idlehint">Press <strong style="color:#00e88f">&#9654; Start Simulation</strong> to begin the live DDoS scenario</div>
+</div>
+
+<div class="card cblue">
+  <div class="stitle" style="margin-bottom:6px">&#x1F4CA; 5-Min Rolling Mean &amp; Z-Score Detection</div>
+  <div class="legend" style="margin-bottom:10px">
+    <span class="ld"><span class="dot" style="background:#00d4ff"></span>Normal mean</span>
+    <span class="ld"><span class="dot" style="background:#ff3b6b"></span>Attack mean</span>
+    <span class="ld"><span class="dot" style="background:#ffb300"></span>Threshold 110.42</span>
+    <span class="ld"><span class="dot" style="background:#a78bfa"></span>Z-Score (right axis)</span>
+  </div>
+  <div class="chartbox"><canvas id="cRoll" height="140"></canvas></div>
+</div>
+
+<div class="twocol">
+  <div class="card">
+    <div class="stitle" style="margin-bottom:10px">&#x1F4C9; Z-Score State Comparison</div>
+    <div class="chartbox"><canvas id="cBar" height="165"></canvas></div>
+    <div style="font-size:11px;color:#64748b;margin-top:8px">Normal Z stays well below 2.33. Attack Z towers far above — overwhelming statistical evidence.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card" id="alertCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="stitle">&#x1F514; Alert Feed</div>
+        <div id="liveChip" style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(0,232,143,.12);color:#00e88f;border:1px solid rgba(0,232,143,.3)">&#x25CF; MONITORING</div>
+      </div>
+      <div id="alertbox"><div style="color:#00e88f">&#x25CF; System nominal — no alerts</div></div>
+    </div>
+    <div id="downbanner">
+      <div id="downTitle" style="font-weight:900;color:#ff3b6b;font-size:15px;margin-bottom:8px">&#x26D4; MyShop.com — Disrupted</div>
+      <div id="downBody" style="font-size:12px;color:#94a3b8;line-height:1.9"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="stitle" style="margin-bottom:8px">
+    &#x1F5A5; Server Request Log &mdash; <span id="logSite" style="color:#00d4ff">MyShop.com</span>
+    <span id="logChip" style="margin-left:8px;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(0,232,143,.12);color:#00e88f;border:1px solid rgba(0,232,143,.3)">NORMAL</span>
+  </div>
+  <div id="httplog"><div style="color:#64748b">Waiting for simulation to start...</div></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="stitle" style="margin-bottom:12px">&#x1F4CB; Statistical Parameters &amp; Live Results</div>
+  <div style="overflow-x:auto"><table><thead><tr><th>Parameter</th><th>Symbol</th><th>Value</th><th>Role</th></tr></thead><tbody id="ptbody"></tbody></table></div>
+</div>
+
+<div id="footer">
+  Based on <em>Analyzing Network Traffic to Detect Anomalies Using Statistical Methods</em><br>
+  JAIN University &middot; Statistics &amp; Probability (25BSMAO4) &middot; 08-05-2026<br>
+  <span style="color:#00d4ff">One-Tailed Z-Test &middot; Poisson Model &middot; CLT &middot; Rolling Window Detection</span>
+</div>
+</div>
+
+<script>
+// ── Clock ──────────────────────────────────────────────────────────────────
+function updateClock(){document.getElementById('clk').textContent=new Date().toLocaleTimeString();}
+updateClock();setInterval(updateClock,1000);
+
+// ── Colours ────────────────────────────────────────────────────────────────
+var C={
+  normal:'#00d4ff',attack:'#ff3b6b',warn:'#ffb300',
+  green:'#00e88f',purple:'#a78bfa',muted:'#64748b',grid:'#141e30'
+};
+function hexA(h,a){
+  var r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+var S={
+  timer:null,running:false,
+  data:[],rolling:[],zscores:[],
+  minute:0,
+  l0:100,la:180,sig:10,n:5,critZ:2.33,se:4.47,critMean:110.42,
+  ATKAT:61,MAXMIN:90,
+  atkFired:false,detFired:false,
+  detMin:null,detZ:0,
+  normMaxZ:0.5,atkMaxZ:0
+};
+
+// ── Math helpers ───────────────────────────────────────────────────────────
+function poisson(lam){
+  var L=Math.exp(-lam),k=0,p=1;
+  do{k++;p*=Math.random();}while(p>L);
+  return k-1;
+}
+function rollMean(arr,w){
+  if(arr.length<w)return null;
+  var sl=arr.slice(-w),s=0;
+  for(var i=0;i<sl.length;i++)s+=sl[i];
+  return s/w;
+}
+function zstat(xbar){return(xbar-S.l0)/S.se;}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+
+// ── Gauge ──────────────────────────────────────────────────────────────────
+function drawGauge(pct){
+  var cv=document.getElementById('cGauge');
+  var ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  var cx=72,cy=72,r=50;
+  var segs=[
+    {f:-2.356,t:-2.356+1.571,c:C.green},
+    {f:-2.356+1.571,t:-2.356+3.142,c:C.warn},
+    {f:-2.356+3.142,t:-2.356+4.712,c:C.attack}
+  ];
+  segs.forEach(function(s){
+    ctx.beginPath();ctx.arc(cx,cy,r,s.f,s.t);
+    ctx.strokeStyle=s.c;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke();
+  });
+  var ang=-2.356+(pct/100)*4.712;
+  var nx=cx+(r-14)*Math.cos(ang),ny=cy+(r-14)*Math.sin(ang);
+  var col=pct<33?C.green:pct<66?C.warn:C.attack;
+  ctx.shadowBlur=10;ctx.shadowColor=col;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(nx,ny);
+  ctx.strokeStyle=col;ctx.lineWidth=3;ctx.lineCap='round';ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+  ctx.font='bold 10px Consolas,monospace';ctx.fillStyle=col;ctx.textAlign='center';
+  ctx.fillText(pct<33?'SAFE':pct<66?'WARNING':'CRITICAL',cx,cy+22);
+}
+drawGauge(0);
+
+// ── Canvas setup ───────────────────────────────────────────────────────────
+function setupCV(id){
+  var cv=document.getElementById(id);
+  var w=cv.parentElement.offsetWidth;
+  if(w<10)w=800;
+  cv.width=w;
+  return {cv:cv,ctx:cv.getContext('2d'),W:cv.width,H:cv.height};
+}
+
+// ── Raw traffic chart ──────────────────────────────────────────────────────
+function drawRaw(){
+  var o=setupCV('cRaw'),ctx=o.ctx,W=o.W,H=o.H;
+  var d=S.data;
+  if(!d.length)return;
+  var pl=42,pr=12,pt=12,pb=26,cW=W-pl-pr,cH=H-pt-pb;
+  var maxY=0;
+  for(var i=0;i<d.length;i++){if(d[i]>maxY)maxY=d[i];}
+  maxY=Math.max(maxY,220);
+  var minY=60;
+  function xS(i){return(i/(S.MAXMIN-1))*cW;}
+  function yS(v){return cH-((v-minY)/(maxY-minY))*cH;}
+  ctx.clearRect(0,0,W,H);
+  ctx.save();ctx.translate(pl,pt);
+  // grid
+  var gv=[80,100,120,140,160,180,200];
+  for(var g=0;g<gv.length;g++){
+    ctx.beginPath();ctx.moveTo(0,yS(gv[g]));ctx.lineTo(cW,yS(gv[g]));
+    ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='9px Consolas,monospace';ctx.textAlign='right';
+    ctx.fillText(gv[g],-4,yS(gv[g])+4);
+  }
+  // attack region
+  if(d.length>S.ATKAT){
+    var ax=xS(S.ATKAT-1);
+    ctx.fillStyle=hexA(C.attack,.05);ctx.fillRect(ax,0,cW-ax,cH);
+    ctx.save();ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(ax,0);ctx.lineTo(ax,cH);
+    ctx.strokeStyle=C.attack;ctx.lineWidth=1.5;ctx.stroke();
+    ctx.restore();
+  }
+  // baseline dashed
+  ctx.save();ctx.setLineDash([4,3]);ctx.globalAlpha=.6;
+  ctx.beginPath();ctx.moveTo(0,yS(S.l0));ctx.lineTo(cW,yS(S.l0));
+  ctx.strokeStyle=C.green;ctx.lineWidth=1;ctx.stroke();
+  ctx.restore();
+  // threshold dashed
+  ctx.save();ctx.setLineDash([6,3]);
+  ctx.beginPath();ctx.moveTo(0,yS(S.critMean));ctx.lineTo(cW,yS(S.critMean));
+  ctx.strokeStyle=C.warn;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+  // draw segment helper
+  function seg(from,to,col){
+    if(to<=from)return;
+    var pts=[];
+    for(var i=from;i<to&&i<d.length;i++)pts.push([xS(i),yS(d[i])]);
+    if(!pts.length)return;
+    var grad=ctx.createLinearGradient(0,0,0,cH);
+    grad.addColorStop(0,hexA(col,.28));grad.addColorStop(1,hexA(col,.01));
+    ctx.beginPath();ctx.moveTo(pts[0][0],cH);
+    for(var j=0;j<pts.length;j++)ctx.lineTo(pts[j][0],pts[j][1]);
+    ctx.lineTo(pts[pts.length-1][0],cH);
+    ctx.fillStyle=grad;ctx.fill();
+    ctx.shadowBlur=5;ctx.shadowColor=col;
+    ctx.beginPath();
+    for(var k=0;k<pts.length;k++){if(k===0)ctx.moveTo(pts[k][0],pts[k][1]);else ctx.lineTo(pts[k][0],pts[k][1]);}
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+  seg(0,Math.min(S.ATKAT,d.length),C.normal);
+  if(d.length>S.ATKAT)seg(S.ATKAT-1,d.length,C.attack);
+  // x labels
+  var xlbls=[0,15,30,45,60,75,90];
+  for(var xi=0;xi<xlbls.length;xi++){
+    if(xlbls[xi]<d.length){
+      ctx.fillStyle=C.muted;ctx.font='9px Consolas,monospace';ctx.textAlign='center';
+      ctx.fillText(xlbls[xi]+'m',xS(xlbls[xi]),cH+18);
+    }
+  }
+  ctx.restore();
+}
+
+// ── Rolling mean chart ─────────────────────────────────────────────────────
+function drawRoll(){
+  var o=setupCV('cRoll'),ctx=o.ctx,W=o.W,H=o.H;
+  var roll=S.rolling,zs=S.zscores;
+  if(!roll.length)return;
+  var pl=44,pr=50,pt=12,pb=26,cW=W-pl-pr,cH=H-pt-pb;
+  var maxY=200,minY=80;
+  for(var i=0;i<roll.length;i++){if(roll[i]!==null&&roll[i]>maxY)maxY=roll[i];}
+  var maxZ=25;
+  for(var j=0;j<zs.length;j++){if(zs[j]!==null&&zs[j]>maxZ)maxZ=zs[j];}
+  function xS(i){return(i/(S.MAXMIN-1))*cW;}
+  function yL(v){return cH-((v-minY)/(maxY-minY))*cH;}
+  function yR(v){return cH-((v+2)/(maxZ+2))*cH;}
+  ctx.clearRect(0,0,W,H);ctx.save();ctx.translate(pl,pt);
+  var gv=[90,100,110,130,150,180];
+  for(var g=0;g<gv.length;g++){
+    ctx.beginPath();ctx.moveTo(0,yL(gv[g]));ctx.lineTo(cW,yL(gv[g]));
+    ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='9px Consolas,monospace';ctx.textAlign='right';
+    ctx.fillText(gv[g],-4,yL(gv[g])+4);
+  }
+  if(roll.length>S.ATKAT){
+    var ax=xS(S.ATKAT-1);
+    ctx.fillStyle=hexA(C.attack,.05);ctx.fillRect(ax,0,cW-ax,cH);
+    ctx.save();ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(ax,0);ctx.lineTo(ax,cH);
+    ctx.strokeStyle=C.attack;ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+  }
+  ctx.save();ctx.setLineDash([5,3]);
+  ctx.beginPath();ctx.moveTo(0,yL(S.critMean));ctx.lineTo(cW,yL(S.critMean));
+  ctx.strokeStyle=C.warn;ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+  ctx.fillStyle=C.warn;ctx.font='8px Consolas,monospace';ctx.textAlign='left';
+  ctx.fillText('110.4',3,yL(S.critMean)-3);
+  function lineSegment(arr,from,to,col,lw,yFn){
+    var pts=[];
+    for(var i=from;i<to&&i<arr.length;i++){if(arr[i]!==null)pts.push([xS(i),yFn(arr[i])]);}
+    if(pts.length<2)return;
+    ctx.shadowBlur=5;ctx.shadowColor=col;
+    ctx.beginPath();
+    for(var k=0;k<pts.length;k++){if(k===0)ctx.moveTo(pts[k][0],pts[k][1]);else ctx.lineTo(pts[k][0],pts[k][1]);}
+    ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineJoin='round';ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+  lineSegment(roll,0,S.ATKAT,C.normal,2.5,yL);
+  if(roll.length>S.ATKAT)lineSegment(roll,S.ATKAT-1,roll.length,C.attack,2.5,yL);
+  ctx.save();ctx.setLineDash([2,2]);ctx.globalAlpha=.7;
+  lineSegment(zs,0,zs.length,C.purple,1.5,yR);
+  ctx.restore();
+  var zax=[0,5,10,15,20];
+  for(var zi=0;zi<zax.length;zi++){
+    if(zax[zi]<=maxZ){
+      ctx.fillStyle=C.purple;ctx.font='8px Consolas,monospace';ctx.textAlign='right';
+      ctx.fillText(zax[zi],cW+44,yR(zax[zi])+4);
+    }
+  }
+  var xlbls=[0,15,30,45,60,75,90];
+  for(var xi=0;xi<xlbls.length;xi++){
+    if(xlbls[xi]<roll.length){
+      ctx.fillStyle=C.muted;ctx.font='9px Consolas,monospace';ctx.textAlign='center';
+      ctx.fillText(xlbls[xi]+'m',xS(xlbls[xi]),cH+18);
+    }
+  }
+  ctx.restore();
+}
+
+// ── Bar chart ──────────────────────────────────────────────────────────────
+function drawBar(){
+  var o=setupCV('cBar'),ctx=o.ctx,W=o.W,H=o.H;
+  ctx.clearRect(0,0,W,H);
+  var bars=[
+    {lbl:'Normal Max',val:S.normMaxZ,c:C.normal},
+    {lbl:'Detection',val:S.detZ||0,c:C.warn},
+    {lbl:'Attack Max',val:S.atkMaxZ||0,c:C.attack}
+  ];
+  var pl=44,pr=12,pt=16,pb=36,cW=W-pl-pr,cH=H-pt-pb;
+  var maxV=22;
+  for(var i=0;i<bars.length;i++){if(bars[i].val>maxV)maxV=bars[i].val;}
+  function yS(v){return cH*(1-v/maxV);}
+  ctx.save();ctx.translate(pl,pt);
+  var gv=[0,5,10,15,20];
+  for(var g=0;g<gv.length;g++){
+    ctx.beginPath();ctx.moveTo(0,yS(gv[g]));ctx.lineTo(cW,yS(gv[g]));
+    ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=C.muted;ctx.font='9px Consolas,monospace';ctx.textAlign='right';
+    ctx.fillText(gv[g],-4,yS(gv[g])+4);
+  }
+  ctx.save();ctx.setLineDash([5,3]);
+  ctx.beginPath();ctx.moveTo(0,yS(S.critZ));ctx.lineTo(cW,yS(S.critZ));
+  ctx.strokeStyle=C.attack;ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+  ctx.fillStyle=C.attack;ctx.font='9px Consolas,monospace';ctx.textAlign='left';
+  ctx.fillText('Z=2.33',2,yS(S.critZ)-3);
+  var bw=Math.min(52,(cW-60)/3);
+  var spacing=(cW-bars.length*bw)/(bars.length+1);
+  for(var b=0;b<bars.length;b++){
+    var x=spacing+(bw+spacing)*b;
+    var bh=cH*(bars[b].val/maxV);
+    var y=cH-bh;
+    var grad=ctx.createLinearGradient(0,y,0,cH);
+    grad.addColorStop(0,bars[b].c);grad.addColorStop(1,hexA(bars[b].c,.2));
+    ctx.fillStyle=grad;ctx.fillRect(x,y,bw,bh);
+    ctx.fillStyle=bars[b].c;ctx.font='bold 11px Consolas,monospace';ctx.textAlign='center';
+    ctx.fillText(bars[b].val.toFixed(2),x+bw/2,y>8?y-5:8);
+    ctx.fillStyle=C.muted;ctx.font='9px Consolas,monospace';
+    ctx.fillText(bars[b].lbl,x+bw/2,cH+20);
+  }
+  ctx.restore();
+}
+
+function redrawAll(){drawRaw();drawRoll();drawBar();}
+window.addEventListener('resize',redrawAll);
+
+// ── Param table ────────────────────────────────────────────────────────────
+function buildTable(){
+  var rows=[
+    ['Baseline Mean','λ₀',S.l0+' pkt/min','Normal traffic rate (Poisson parameter)','#00d4ff'],
+    ['Attack Mean','λ_atk',S.la+' pkt/min','Elevated rate during DDoS (+'+Math.round((S.la/S.l0-1)*100)+'%)','#ff3b6b'],
+    ['Std Deviation','σ','√'+S.l0+' = '+S.sig.toFixed(2),'Poisson property: σ = √λ','#94a3b8'],
+    ['Window Size','n','5 minutes','Rolling window for sample mean','#a78bfa'],
+    ['Standard Error','SE',S.se.toFixed(3),'σ / √n = uncertainty in mean','#94a3b8'],
+    ['Significance','α','0.01 (1%)','Acceptable false-positive rate','#ffb300'],
+    ['Critical Z','Z_crit',S.critZ.toFixed(2),'From Z-table at 99% confidence','#ffb300'],
+    ['Critical Mean','x_crit',S.critMean.toFixed(2)+' pkt/min','Threshold triggering anomaly alert','#ffb300'],
+    ['Detection Minute','Min',S.detMin?'Minute '+S.detMin:'—','First minute threshold exceeded','#ffb300'],
+    ['Detection Z-Score','Z_det',S.detZ?S.detZ.toFixed(2):'—','Z-score at detection point','#ff3b6b'],
+    ['Max Attack Z','Z_max',S.atkMaxZ?S.atkMaxZ.toFixed(2):'—','Peak statistical evidence of attack','#ff3b6b']
+  ];
+  var html='';
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    html+='<tr><td style="color:#e2e8f0">'+r[0]+'</td><td style="color:#a78bfa;font-family:Consolas,monospace">'+r[1]+'</td><td style="color:'+r[4]+';font-family:Consolas,monospace">'+r[2]+'</td><td style="color:#64748b;font-size:12px">'+r[3]+'</td></tr>';
+  }
+  document.getElementById('ptbody').innerHTML=html;
+}
+buildTable();
+
+// ── Alert & log helpers ─────────────────────────────────────────────────────
+function addAlert(msg){
+  var box=document.getElementById('alertbox');
+  var d=document.createElement('div');
+  d.style.cssText='color:#ff3b6b;margin-bottom:4px;font-size:12px';
+  d.textContent='⚠ '+msg;
+  box.insertBefore(d,box.firstChild);
+  var kids=box.children;
+  for(var i=0;i<kids.length;i++)kids[i].style.opacity=Math.max(0.1,1-i*0.1)+'';
+  document.getElementById('liveChip').style.cssText='padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(255,59,107,.15);color:#ff3b6b;border:1px solid rgba(255,59,107,.4);animation:blink 1s infinite';
+  document.getElementById('liveChip').textContent='● LIVE';
+  document.getElementById('alertCard').classList.add('cred');
+}
+
+function addHttp(txt,col){
+  var log=document.getElementById('httplog');
+  var d=document.createElement('div');
+  d.style.cssText='color:'+col+';margin-bottom:2px;font-size:11px';
+  d.textContent=txt;
+  log.insertBefore(d,log.firstChild);
+  while(log.children.length>60)log.removeChild(log.lastChild);
+}
+
+function setSC(id,val,unit,col,pulse){
+  var sv=document.getElementById('sv'+id);
+  var sc=document.getElementById('sc'+id);
+  if(!sv||!sc)return;
+  sv.style.color=col;
+  sv.innerHTML=val+(unit?'<span class="su">'+unit+'</span>':'');
+  sc.style.borderColor=hexA(col,.35);
+  sc.style.boxShadow='0 0 16px '+hexA(col,.1);
+  sc.style.animation=pulse?'pulse .8s infinite':'none';
+}
+
+// ── HTTP messages ──────────────────────────────────────────────────────────
+var OK_REQ=[
+  ['GET /','200 OK'],['GET /products','200 OK'],['GET /cart','200 OK'],
+  ['POST /checkout','200 OK'],['GET /api/user','200 OK'],
+  ['GET /static/app.js','200 OK'],['GET /images/hero.jpg','200 OK']
+];
+var ATK_REQ=[
+  ['GET /','503 Service Unavailable'],['POST /login','503 Service Unavailable'],
+  ['GET /','Connection timeout'],['GET /api/data','503 Service Unavailable'],
+  ['GET /','Connection refused'],['POST /pay','504 Gateway Timeout']
+];
+
+function p3(n){var s=''+n;while(s.length<3)s='0'+s;return s;}
+function padR(s,n){while(s.length<n)s+=' ';return s.slice(0,n);}
+
+// ── Main tick ──────────────────────────────────────────────────────────────
+function tick(){
+  var m=S.minute+1;S.minute=m;
+  var isAtk=m>=S.ATKAT;
+  var pkt=poisson(isAtk?S.la:S.l0);
+  S.data.push(pkt);
+  var rm=rollMean(S.data,S.n);
+  var z=rm!==null?zstat(rm):null;
+  S.rolling.push(rm);S.zscores.push(z);
+
+  var sn=document.getElementById('iSite').value||'YourSite.com';
+  document.getElementById('siteLabel').textContent=sn;
+  document.getElementById('logSite').textContent=sn;
+
+  if(!isAtk){
+    var r=OK_REQ[m%OK_REQ.length];
+    var ip=(192+(m%4))+'.168.'+(m%255)+'.'+(m*7%255);
+    addHttp('['+p3(m)+'m] '+padR(ip,18)+' '+padR(r[0],22)+' '+r[1],C.green);
+  } else {
+    var r2=ATK_REQ[m%ATK_REQ.length];
+    var ip2=(10+(m%200))+'.'+(m%255)+'.'+(m*3%255)+'.'+(m*13%255);
+    addHttp('['+p3(m)+'m] '+padR(ip2,18)+' '+padR(r2[0],22)+' '+r2[1],C.attack);
+    if(!S.atkFired){
+      S.atkFired=true;
+      addAlert('Min '+m+': DDoS wave detected — volumetric packet flood initiated');
+      document.getElementById('logChip').textContent='⚠ UNDER ATTACK';
+      document.getElementById('logChip').style.cssText='margin-left:8px;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(255,59,107,.15);color:#ff3b6b;border:1px solid rgba(255,59,107,.4);animation:pulse .8s infinite';
+    }
+  }
+
+  if(z!==null&&z>S.critZ&&!S.detFired){
+    S.detFired=true;S.detMin=m;S.detZ=z;
+    addAlert('Min '+m+': ANOMALY CONFIRMED — Rolling mean '+rm.toFixed(1)+', Z='+z.toFixed(2)+' > '+S.critZ);
+    addAlert('Min '+m+': '+sn+' is now UNREACHABLE — DDoS in progress');
+    addAlert('Min '+m+': Security team notified — rate-limiting + CDN shield enabled');
+    document.getElementById('sitebadge').textContent='⛔ SITE DOWN';
+    document.getElementById('sitebadge').className='bdown';
+    var banner=document.getElementById('downbanner');
+    banner.style.display='block';
+    document.getElementById('downTitle').textContent='⛔ '+sn+' — Service Disrupted';
+    document.getElementById('downBody').innerHTML=
+      'Your website is <strong style="color:#ff3b6b">unreachable</strong> due to a volumetric DDoS flood.<br>'+
+      'Anomaly confirmed at <strong style="color:#ffb300">Minute '+m+'</strong> — Z-score = '+
+      '<strong style="color:#ffb300">'+z.toFixed(2)+'</strong> (threshold: '+S.critZ+').<br>'+
+      'Rolling mean reached <strong style="color:#ff3b6b">'+rm.toFixed(1)+' pkt/min</strong> vs baseline '+S.l0+' pkt/min.<br>'+
+      'Initiating automatic mitigation: rate-limiting + CDN shield...';
+    var sc=document.getElementById('scDet');sc.style.display='block';
+    document.getElementById('svDet').innerHTML='Min '+m;
+  }
+
+  if(z!==null){
+    if(!isAtk&&z>S.normMaxZ)S.normMaxZ=z;
+    if(isAtk&&z>S.atkMaxZ)S.atkMaxZ=z;
+  }
+
+  var pc=isAtk?C.attack:C.normal;
+  setSC('Pkt',pkt,'pkt',pc,isAtk);
+  setSC('Rm',rm!==null?rm.toFixed(1):'—','pkt',rm!==null&&rm>S.critMean?C.attack:C.normal,rm!==null&&rm>S.critMean);
+  setSC('Z',z!==null?z.toFixed(2):'—','',z!==null&&z>S.critZ?C.attack:C.normal,z!==null&&z>S.critZ);
+  document.getElementById('svMin').innerHTML=m+'<span class="su">min</span>';
+
+  var pct=clamp(z!==null?Math.round((z/20)*100):0,0,100);
+  drawGauge(pct);
+  document.getElementById('pb').style.width=(m/S.MAXMIN*100)+'%';
+  redrawAll();
+  buildTable();
+
+  if(m>=S.MAXMIN)stopSim();
+}
+
+// ── Start / Stop ───────────────────────────────────────────────────────────
+function startSim(){
+  clearInterval(S.timer);
+  S.l0=parseInt(document.getElementById('iL0').value)||100;
+  S.la=parseInt(document.getElementById('iLA').value)||180;
+  S.sig=Math.sqrt(S.l0);
+  S.se=S.sig/Math.sqrt(S.n);
+  S.critMean=S.l0+S.critZ*S.se;
+  S.running=true;S.minute=0;
+  S.data=[];S.rolling=[];S.zscores=[];
+  S.atkFired=false;S.detFired=false;
+  S.detMin=null;S.detZ=0;S.normMaxZ=0.5;S.atkMaxZ=0;
+
+  document.getElementById('alertbox').innerHTML='<div style="color:#00e88f">● Monitoring started...</div>';
+  document.getElementById('httplog').innerHTML='';
+  document.getElementById('sitebadge').textContent='● SITE ONLINE';
+  document.getElementById('sitebadge').className='bok';
+  document.getElementById('downbanner').style.display='none';
+  document.getElementById('scDet').style.display='none';
+  document.getElementById('liveChip').style.cssText='padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(0,232,143,.12);color:#00e88f;border:1px solid rgba(0,232,143,.3)';
+  document.getElementById('liveChip').textContent='● MONITORING';
+  document.getElementById('alertCard').classList.remove('cred');
+  document.getElementById('logChip').textContent='NORMAL';
+  document.getElementById('logChip').style.cssText='margin-left:8px;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(0,232,143,.12);color:#00e88f;border:1px solid rgba(0,232,143,.3)';
+  document.getElementById('pb').style.width='0%';
+  document.getElementById('idlehint').style.display='none';
+  setSC('Pkt','—','pkt',C.normal,false);
+  setSC('Rm','—','pkt',C.normal,false);
+  setSC('Z','—','',C.normal,false);
+  drawGauge(0);redrawAll();buildTable();
+  document.getElementById('btnStart').style.display='none';
+  document.getElementById('btnStop').style.display='inline-block';
+  var spd=parseInt(document.getElementById('iSpeed').value)||400;
+  S.timer=setInterval(tick,spd);
+}
+
+function stopSim(){
+  clearInterval(S.timer);S.running=false;
+  document.getElementById('btnStart').style.display='inline-block';
+  document.getElementById('btnStop').style.display='none';
+}
+
+function toggleExp(){
+  var el=document.getElementById('explainer');
+  el.classList.toggle('show');
+}
+</script>
+</body>
+</html>
